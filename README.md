@@ -1,3 +1,3 @@
 # SomeNewThings
-一点新奇的玩意（给github当网盘了）
-下载请前往Release，上面的仓库也可以下载，但是release里的是打包成自解压的版本
+一点新奇的玩意
+下载请前往Release，仓库也可下载，但release里是自解压（且文件夹有图标）
