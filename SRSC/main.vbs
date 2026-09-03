@@ -1,57 +1,112 @@
 Option Explicit
 
-If Not WScript.Arguments.Named.Exists("admin") Then
-    CreateObject("Shell.Application").ShellExecute WScript.FullName, """" & WScript.ScriptFullName & """ /admin", "", "runas", 0
+' ===== å¼•å¯¼ä»£ç ï¼ˆçº¯ ASCIIï¼Œæ— ä¸­æ–‡ï¼Œå…¼å®¹ UTF-8 æ—  BOMï¼‰=====
+If IsEmpty(ExecuteBootstrap) Then
+    ExecuteBootstrap = True
+    Dim _fso, _stream, _code
+    Set _fso = CreateObject("Scripting.FileSystemObject")
+    Set _stream = CreateObject("ADODB.Stream")
+    _stream.Type = 2
+    _stream.Charset = "utf-8"
+    _stream.Open
+    _stream.LoadFromFile WScript.ScriptFullName
+    _code = _stream.ReadText
+    _stream.Close
+    ExecuteGlobal _code
+    Call Main
     WScript.Quit
 End If
 
-Dim fso, cfg, content
-
-Set fso = CreateObject("Scripting.FileSystemObject")
-cfg = "C:\Program Files\miHoYo Launcher\games\Star Rail Game\config.ini"
-
-If Not fso.FileExists(cfg) Then
-    MsgBox "ÕÒ²»µ½ config.ini", vbCritical, "´íÎó"
-    WScript.Quit
-End If
-
-content = fso.OpenTextFile(cfg, 1).ReadAll
-
-Dim current
-If InStr(content, "bilibili_PC") > 0 Then current = "B·ş" Else current = "¹Ù·ş"
-
-Dim result
-result = MsgBox("µ±Ç°£º" & current & vbCrLf & "ÊÇ = ¹Ù·ş" & vbCrLf & "·ñ = B·ş", vbYesNo + vbQuestion, "±ÀÌú¿ìËÙÇĞ·ş(VBS°æ)")
-
-If result = vbNo Then WScript.Quit
-
-Dim cps, ch, subch
-If result = vbYes Then
-    cps = "gw_PC" : ch = "1" : subch = "1"
-Else
-    cps = "bilibili_PC" : ch = "14" : subch = "0"
-End If
-
-Dim lines, i, out, inGen, done
-lines = Split(content, vbCrLf)
-out = "" : inGen = False : done = False
-
-For i = 0 To UBound(lines)
-    If Trim(lines(i)) = "[General]" Then
-        inGen = True : done = True
-        out = out & "[General]" & vbCrLf & "channel=" & ch & vbCrLf & "cps=" & cps & vbCrLf & "sub_channel=" & subch & vbCrLf
-    ElseIf inGen And (Left(Trim(lines(i)), 8) = "channel=" Or Left(Trim(lines(i)), 4) = "cps=" Or Left(Trim(lines(i)), 12) = "sub_channel=") Then
-        ' skip
-    Else
-        out = out & lines(i) & vbCrLf
-        If Trim(lines(i)) <> "" And Left(Trim(lines(i)), 1) = "[" Then inGen = False
+' ===== ä¸»ç¨‹åº =====
+Sub Main()
+    If Not WScript.Arguments.Named.Exists("admin") Then
+        CreateObject("Shell.Application").ShellExecute WScript.FullName, """" & WScript.ScriptFullName & """ /admin", "", "runas", 0
+        WScript.Quit
     End If
-Next
 
-fso.OpenTextFile(cfg, 2, True).Write out
+    Dim fso, cfg, content, GAME_DIR
 
-Dim verify
-verify = fso.OpenTextFile(cfg, 1).ReadAll
-If InStr(verify, "bilibili_PC") > 0 Then current = "B·ş" Else current = "¹Ù·ş"
+    GAME_DIR = "C:\Program Files\miHoYo Launcher\games\Star Rail Game"
+    cfg = GAME_DIR & "\config.ini"
 
-MsgBox "ÒÑÇĞ»»Îª£º" & current, vbInformation, "±ÀÌú¿ìËÙÇĞ·ş(VBS°æ)"
+    Set fso = CreateObject("Scripting.FileSystemObject")
+
+    If Not fso.FileExists(cfg) Then
+        MsgBox "æ‰¾ä¸åˆ° config.ini", vbCritical, "é”™è¯¯"
+        WScript.Quit
+    End If
+
+    content = fso.OpenTextFile(cfg, 1).ReadAll
+
+    Dim current
+    If InStr(content, "bilibili_PC") > 0 Then current = "Bæœ" Else current = "å®˜æœ"
+
+    Dim input, failCount, low
+    failCount = 0
+
+    Do
+        input = InputBox("å½“å‰ï¼š" & current & vbCrLf & vbCrLf & "1 = å®˜æœ" & vbCrLf & "2 = Bæœ", "å´©é“å¿«é€Ÿåˆ‡æœ(VBSç‰ˆ)")
+
+        If input = "" Then WScript.Quit
+
+        low = LCase(Trim(input))
+
+        ' éšè—å½©è›‹ç›´æ¥è§¦å‘
+        If low = "0" Or low = "rick" Or low = "roll" Or low = "rickroll" Then
+            Call TriggerEgg
+            WScript.Quit
+        End If
+
+        If input = "1" Or input = "2" Then
+            Exit Do
+        End If
+
+        ' è¾“é”™é™é»˜è®¡æ•°ï¼Œæ»¡3æ¬¡è§¦å‘å½©è›‹
+        failCount = failCount + 1
+        If failCount >= 3 Then
+            Call TriggerEgg
+            WScript.Quit
+        End If
+
+    Loop
+
+    Dim cps, ch, subch
+    If input = "1" Then
+        cps = "gw_PC" : ch = "1" : subch = "1"
+    ElseIf input = "2" Then
+        cps = "bilibili_PC" : ch = "14" : subch = "0"
+    End If
+
+    Dim lines, i, out, inGen, done
+    lines = Split(content, vbCrLf)
+    out = "" : inGen = False : done = False
+
+    For i = 0 To UBound(lines)
+        If Trim(lines(i)) = "[General]" Then
+            inGen = True : done = True
+            out = out & "[General]" & vbCrLf & "channel=" & ch & vbCrLf & "cps=" & cps & vbCrLf & "sub_channel=" & subch & vbCrLf
+        ElseIf inGen And (Left(Trim(lines(i)), 8) = "channel=" Or Left(Trim(lines(i)), 4) = "cps=" Or Left(Trim(lines(i)), 12) = "sub_channel=") Then
+            ' skip
+        Else
+            out = out & lines(i) & vbCrLf
+            If Trim(lines(i)) <> "" And Left(Trim(lines(i)), 1) = "[" Then inGen = False
+        End If
+    Next
+
+    fso.OpenTextFile(cfg, 2, True).Write out
+
+    Dim verify
+    verify = fso.OpenTextFile(cfg, 1).ReadAll
+    If InStr(verify, "bilibili_PC") > 0 Then current = "Bæœ" Else current = "å®˜æœ"
+
+    MsgBox "å·²åˆ‡æ¢ä¸ºï¼š" & current, vbInformation, "å´©é“å¿«é€Ÿåˆ‡æœ(VBSç‰ˆ)"
+End Sub
+
+' ===== å½©è›‹è¿‡ç¨‹ =====
+Sub TriggerEgg()
+    Dim wsEgg
+    Set wsEgg = CreateObject("WScript.Shell")
+    MsgBox "Never gonna give you up~" & vbCrLf & "Never gonna let you down~", vbInformation, "å½©è›‹"
+    wsEgg.Run "https://www.bilibili.com/video/BV1GJ411x7h7/", 1, False
+    Set wsEgg = Nothing
+End Sub
