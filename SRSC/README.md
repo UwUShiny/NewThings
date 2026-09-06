@@ -5,3 +5,6 @@
 下载链接: https://1837563502.share.123pan.cn/123pan/T14MTd-z0LC3
 VBS有点问题，修了（AI修的）
 如果需要使用请更改主文件里的路径，改成你自己的，可在文件里修改“GAME_DIR=”后面的数据（如"D:\MHY_Games\Star Rail Game"），别把原有的双引号去了
+# 额外说明
+我不干了，要用的话也可以用，原理是修改config.ini内的配置项
+其实有其他的成熟方案，如Starward的硬链接（Starward项目链接：https://github.com/Scighost/Starward）
